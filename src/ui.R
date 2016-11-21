@@ -10,7 +10,7 @@ ui <- shinyUI(
                     .table.data{
                     width: 100%;
                     }
-                    #image1{
+                    #image1 #image2{
                      max-height: 540px;
                      height: 100% !important;
                      width: 100%;
@@ -20,10 +20,17 @@ ui <- shinyUI(
                     }
                     #reloadHist{
                      margin-top: 4%;
+                    }
+                    #button{
+                     horizontal-align: middle;
+                    }
+                    img{
+                     display: block !important;
+                     margin: 0 auto !important;
                     }")
                 )
             ),
-        h1(span("Basic Image Transformation", 
+        h1(span("One-cut Grabcut", 
             style = "font-weight: 300; font-family: 'Lobster', cursive;"
             ), 
             style = "font-family: 'Source Sans Pro';
@@ -37,7 +44,7 @@ ui <- shinyUI(
                        style = 'align: center; text-align: center',
                        wellPanel(fileInput(inputId = 'files', 
                            label = 'Select an Image',
-                           accept=c('image/bmp', 'image/bmp','.bmp')
+                           accept=c('image/bmp', 'image/png','image/jpg','.bmp','.jpg','.png')
                            ),
                        actionButton('reloadInput',
                                     'Reload image',
@@ -51,56 +58,6 @@ ui <- shinyUI(
                                                 'negativeT',
                                                 'Go!',
                                                 icon = icon('adjust')
-                                            ),
-                                            hr(),
-                                            sliderInput(
-                                                "degrees", 
-                                                "Rotation:",
-                                                min=-270, 
-                                                max=270, 
-                                                value=0,
-                                                step = 90
-                                            ),
-                                            hr(),
-                                            sliderInput(
-                                                "scalev", 
-                                                "Scaling ver:",
-                                                min=0, 
-                                                max=270, 
-                                                value=0,
-                                                step = 90
-                                            ),
-                                            hr(),
-                                            sliderInput(
-                                                "scaleh", 
-                                                "Scaling hor:",
-                                                min=0, 
-                                                max=270, 
-                                                value=0,
-                                                step = 90
-                                            ),
-                                            hr(),
-                                            h5('Mirroring:',
-                                               style = 'font-weight: 700; text-align: center'
-                                            ),
-                                            fluidRow(
-                                                actionButton('mirrorV',
-                                                             'V',
-                                                             icon = icon('arrows-v')
-                                                ),
-                                                actionButton('mirrorH',
-                                                             'H',
-                                                             icon = icon('arrows-h')
-                                                )
-                                            ),
-                                            hr(),
-                                            h5('Equalization:',
-                                               style = 'font-weight: 700; text-align: center'
-                                            ),
-                                            actionButton(
-                                                'equalizationB',
-                                                'Go!',
-                                                icon = icon('bars')
                                             ),
                                             hr(),
                                              sliderInput("slider2",label = 'Umbralization:' ,min = 0, max = 255, 
@@ -130,38 +87,15 @@ ui <- shinyUI(
                    ),
                    column(width = 9, 
                           tabsetPanel(
-                              tabPanel('Image',
+                              tabPanel('Original',
                                        uiOutput('images', 
-                                                style = 'overflow:auto'),
+                                                style = 'overflow:auto; align:center',container = tags$div),
                                        hr(),
-                                       tableOutput('hdr')),
-                              tabPanel('Zoom',
-                                       fluidRow(column(width = 6,
-                                                       plotOutput("plot2", height = 100,
-                                                                  brush = brushOpts(
-                                                                      id = "plot2_brush",
-                                                                      resetOnNew = TRUE)
-                                                                  )
-                                                       ),
-                                                column(width = 6,
-                                                       plotOutput("plot3", height = 100)
-                                                      )
-                                                )
-                                       ),
-                              tabPanel('Histogram',
-                                       column(width = 3,offset = 5,
-                                              conditionalPanel('input.loadHist == 0',
-                                                               actionButton('loadHist',
-                                                                            'Load histogram',
-                                                                            icon = icon('bar-chart'))),
-                                              conditionalPanel('input.loadHist > 0',
-                                                               actionButton('reloadHist',
-                                                                            'Reload histogram',
-                                                                            icon = icon('refresh'))),
-                                              hr()
-                                              ),
-                                       plotOutput("hist0"),
-                                       fluidRow(column(width = 4,plotOutput("hist1", height = 300)),column(width = 4,plotOutput("hist2", height = 300)),column(width = 4,plotOutput("hist3", height = 300))))
+                                       actionButton('grabcutB', 'select foreground',style = "text-align: center; width:100%")),
+                                       #actionButton("grabcutB","select foreground",style = 'font-weight: 700; text-align: center')),
+                              tabPanel('Result',
+                                       uiOutput('images2', 
+                                                style = 'overflow:auto; align:center',container = tags$div))
                               )
                           )
             )
