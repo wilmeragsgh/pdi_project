@@ -5,23 +5,25 @@ lib('ggplot2')
 ##system("export PKG_CFLAGS=`pkg-config --cflags opencv`")
 ##system("export PKG_CXXFLAGS=`pkg-config --cflags opencv` `R -e 'Rcpp:::CxxFlags()' -fopenmp`")
 # To compile:
-#Sys.setenv("PKG_LIBS" ="`pkg-config --libs opencv` `Rscript -e 'Rcpp:::LdFlags()' -fopenmp -lgomp`")
-#Sys.setenv("PKG_CFLAGS" ="`pkg-config --cflags opencv`")
-#Sys.setenv("PKG_CXXFLAGS"="`pkg-config --cflags opencv` `Rscript -e 'Rcpp:::CxxFlags()' -fopenmp`")
-#system("R CMD SHLIB ../build/grabcut.cpp")
+Sys.setenv("PKG_LIBS" ="`pkg-config --libs opencv` `Rscript -e 'Rcpp:::LdFlags()' -fopenmp -lgomp`")
+Sys.setenv("PKG_CFLAGS" ="`pkg-config --cflags opencv`")
+Sys.setenv("PKG_CXXFLAGS"="`pkg-config --cflags opencv` `Rscript -e 'Rcpp:::CxxFlags()' -fopenmp`")
+system("R CMD SHLIB ../build/negativeTfg.cpp")
+system("R CMD SHLIB ../build/combiner.cpp")
 #system("R CMD SHLIB ../build/negativeT.cpp")
 #system("R CMD SHLIB ../build/brightnessI.cpp")
 #system("R CMD SHLIB ../build/umbralizationI.cpp")
+#system("R CMD SHLIB ../build/grabcut.cpp")
 
 cat('Wait for it...')
 setwd('..')
+# foreground/ transformations:
+dyn.load('build/negativeTfg.so')
+dyn.load('build/combiner.so')
+#dyn.load('build/brightnessIfg.so')
+#dyn.load('build/umbralizationIfg.so')
+# original image transformation:
 dyn.load('build/negativeT.so')
-#dyn.load('build/grabcut.so')
-#dyn.load('build/mirrorTV.so')
-#dyn.load('build/mirrorTH.so')
-#dyn.load('build/rotateT.so')
-#dyn.load('build/histD.so')
-#dyn.load('build/equalizationI.so')
 dyn.load('build/brightnessI.so')
 dyn.load('build/umbralizationI.so')
 
@@ -74,6 +76,33 @@ shinyServer(function(input, output) {
         files
     })
     
+    output$images4 <- renderUI({
+      if(is.null(input$files)) return(NULL)
+      #if(input$reloadInput > 0){
+      #    image_output_list <- list(imageOutput('image1'))
+      #    do.call(tagList, image_output_list)  
+      #} else
+      #    if(input$negativeT > 0){
+      #        image_output_list <- list(imageOutput('image1'))
+      #        do.call(tagList, image_output_list)  
+      #    } else
+      image_output_list <- list(imageOutput('image4'))
+      do.call(tagList, image_output_list)
+    })
+    output$images3 <- renderUI({
+      if(is.null(input$files)) return(NULL)
+      #if(input$reloadInput > 0){
+      #    image_output_list <- list(imageOutput('image1'))
+      #    do.call(tagList, image_output_list)  
+      #} else
+      #    if(input$negativeT > 0){
+      #        image_output_list <- list(imageOutput('image1'))
+      #        do.call(tagList, image_output_list)  
+      #    } else
+      image_output_list <- list(imageOutput('image3'))
+      do.call(tagList, image_output_list)
+    })
+    
     output$images2 <- renderUI({
       if(is.null(input$files)) return(NULL)
       #if(input$reloadInput > 0){
@@ -93,6 +122,11 @@ shinyServer(function(input, output) {
       assign('currentImage',value = files()$datapath,envir = e1)
       local({
         output[['image2']] <- 
+          renderImage({
+            list(src = files()$datapath,
+                 alt = "Image failed to render")
+          }, deleteFile = F)
+        output[['image3']] <- 
           renderImage({
             list(src = files()$datapath,
                  alt = "Image failed to render")
@@ -140,81 +174,191 @@ shinyServer(function(input, output) {
                       list(src = files()$datapath,
                            alt = "Image failed to render")
                   }, deleteFile = F)
+              output[['image2']] <- 
+                renderImage({
+                  list(src = files()$datapath,
+                       alt = "Image failed to render")
+                }, deleteFile = F)
+              output[['image3']] <- 
+                renderImage({
+                  list(src = files()$datapath,
+                       alt = "Image failed to render")
+                }, deleteFile = F)
           })
+      })
+# combine fg/bg:
+      observe({
+        if(input$combine == 0 || is.null(input$files)) return(NULL)
+        route <- .Call('combineFB',get('currentImage1',envir = e1),get('currentImage2',envir = e1))
+        withProgress(message = 'Combining images...',{
+          assign('currentImage3',value = route,envir = e1)
+        })
+        local({
+          #
+          output[['image4']] <- 
+            renderImage({
+              list(src = route,
+                   alt = "Image failed to render")
+            }, deleteFile = F)
+        })
       })
 #/      
       observe({
         if(input$grabcutB == 0 || is.null(input$files)) return(NULL)
         withProgress(message = 'loading image...',{
           print(input$files$datapath)
-          system(paste("../../demo/./grabcut_imp2_trial ",get('currentImage',envir = e1)))
+          system(paste("../build/./grabcut_imp2_trial ",get('currentImage',envir = e1)))
         })#input$files$datapath
         local({
-          #
+          assign('currentImage1',value = "/home/explicarte/Downloads/backup/UCV/Proyecto/pdi_project/foreground.jpg",envir = e1)
+          # g++ -o grabcut_imp2_trial grabcut_imp2_trial.cpp `pkg-config opencv --cflags --libs`
           output[['image2']] <- 
             renderImage({
-              list(src = "/home/explicarte/Downloads/backup/UCV/Proyecto/pdi_project/cutted.jpg",
+              list(src = "/home/explicarte/Downloads/backup/UCV/Proyecto/pdi_project/foreground.jpg",
+                   alt = "Image failed to render")
+            }, deleteFile = F)
+          assign('currentImage2',value = "/home/explicarte/Downloads/backup/UCV/Proyecto/pdi_project/background.jpg",envir = e1)
+          output[['image3']] <- 
+            renderImage({
+              list(src = "/home/explicarte/Downloads/backup/UCV/Proyecto/pdi_project/background.jpg",
                    alt = "Image failed to render")
             }, deleteFile = F)
         })
       })
 
-#      output[['plot2']] <- 
-#        renderImage({
-#          list(src = route,
-#               alt = "Image failed to render")
-#        }, deleteFile = F)
 
 # processing transformation:
 # image negative:
       observe({
-          if(input$negativeT == 0 || is.null(input$files)) return(NULL)
+        if(input$negativeT == 0 || is.null(input$files)) return(NULL)
+        if(input$source == 2){
           withProgress(message = 'Creating negative...',{
-              route <- .Call('negativeTransformation',get('currentImage',envir = e1))
-              assign('currentImage',value = route,envir = e1)
+            route <- .Call('negativeTransformation1',get('currentImage1',envir = e1),2)
+            print("2")
+            assign('currentImage1',value = route,envir = e1)
           })
           local({
-              output[['image1']] <- 
-                  renderImage({
-                      list(src = route,
-                           alt = "Image failed to render")
-                  }, deleteFile = F)
+            output[['image2']] <- 
+              renderImage({
+                list(src = route,
+                     alt = "Image failed to render")
+              }, deleteFile = F)
           })
+        } else if(input$source == 3){
+          withProgress(message = 'Creating negative...',{
+            route <- .Call('negativeTransformation1',get('currentImage2',envir = e1),3)
+            assign('currentImage2',value = route,envir = e1)
+          })
+          local({
+            output[['image3']] <- 
+              renderImage({
+                list(src = route,
+                     alt = "Image failed to render")
+              }, deleteFile = F)
+          })
+        } else{
+          withProgress(message = 'Creating negative...',{
+            route <- .Call('negativeTransformation',get('currentImage',envir = e1))
+            assign('currentImage',value = route,envir = e1)
+          })
+          local({
+            output[['image1']] <- 
+              renderImage({
+                list(src = route,
+                     alt = "Image failed to render")
+              }, deleteFile = F)
+          })
+        }
       })
 #/
 # image bright:
       observe({
-          if(input$bright == 0 || is.null(input$files)) return(NULL)
+        if(input$bright == 0 || is.null(input$files)) return(NULL)
+        if(input$source == 2){
           withProgress(message = 'Making it brighter!',{
-              route <- .Call('brightnessI',get('currentImage',envir = e1),input$bright)
-              assign('currentImage',value = route,envir = e1)
+            route <- .Call('brightnessIfg',get('currentImage1',envir = e1),input$bright,2)
+            assign('currentImage1',value = route,envir = e1)
           })
           local({
-              output[['image1']] <- 
-                  renderImage({
-                      list(src = route,
-                           alt = "Image failed to render")
-                  }, deleteFile = F)
+            output[['image2']] <- 
+              renderImage({
+                list(src = route,
+                     alt = "Image failed to render")
+              }, deleteFile = F)
           })
+        } else if(input$source == 3){
+          withProgress(message = 'Making it brighter!',{
+            route <- .Call('brightnessIfg',get('currentImage2',envir = e1),input$bright,3)
+            assign('currentImage2',value = route,envir = e1)
+          })
+          local({
+            output[['image3']] <- 
+              renderImage({
+                list(src = route,
+                     alt = "Image failed to render")
+              }, deleteFile = F)
+          })
+        } else{
+          withProgress(message = 'Making it brighter!',{
+            route <- .Call('brightnessI',get('currentImage',envir = e1),input$bright)
+            assign('currentImage',value = route,envir = e1)
+          })
+          local({
+            output[['image1']] <- 
+              renderImage({
+                list(src = route,
+                     alt = "Image failed to render")
+              }, deleteFile = F)
+          })
+        }
       })
 #/
 
 # image umbralization:
       observe({
-          if(input$umbralizationI == 0 || is.null(input$files)) return(NULL)
+        if(input$umbralizationI == 0 || is.null(input$files)) return(NULL)
+        if(input$source == 2){
           withProgress(message = 'umbralizing...',{
+            route <- .Call('umbralizationIfg',get('currentImage1',envir = e1),input$slider2[1],input$slider2[2],2)
+            print(input$slider2[1])
+            print(input$slider2[2])
+            assign('currentImage1',value = route,envir = e1)
+          })
+          local({
+            output[['image2']] <- 
+              renderImage({
+                list(src = route,
+                     alt = "Image failed to render")
+              }, deleteFile = F)
+          })
+        } else if(source == 3){
+          withProgress(message = 'umbralizing...',{
+            route <- .Call('umbralizationIfg',get('currentImage2',envir = e1),input$slider2[1],input$slider2[2],3)
+            print(input$slider2[1])
+            print(input$slider2[2])
+            assign('currentImage2',value = route,envir = e1)
+          })
+          local({
+            output[['image3']] <- 
+              renderImage({
+                list(src = route,
+                     alt = "Image failed to render")
+              }, deleteFile = F)
+          })} else{
+            withProgress(message = 'umbralizing...',{
               route <- .Call('umbralizationI',get('currentImage',envir = e1),input$slider2[1],input$slider2[2])
               print(input$slider2[1])
               print(input$slider2[2])
               assign('currentImage',value = route,envir = e1)
-          })
-          local({
+            })
+            local({
               output[['image1']] <- 
-                  renderImage({
-                      list(src = route,
-                           alt = "Image failed to render")
-                  }, deleteFile = F)
-          })
+                renderImage({
+                  list(src = route,
+                       alt = "Image failed to render")
+                }, deleteFile = F)
+            })
+        }
       })
 #/
 # downloader:

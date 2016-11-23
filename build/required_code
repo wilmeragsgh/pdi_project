@@ -1,0 +1,6 @@
+#! /bin/bash
+g++ -o grabcut_imp1 grabcut_imp1.cpp `pkg-config opencv --cflags --libs`
+g++ -o grabcut_imp2_trial grabcut_imp2_trial.cpp `pkg-config opencv --cflags --libs`
+
+./grabcut_imp1 trial1.jpg
+./grabcut_imp2 trial1.jpg

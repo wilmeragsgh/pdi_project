@@ -50,7 +50,13 @@ ui <- shinyUI(
                                     'Reload image',
                                     icon = icon('refresh'))),
                        hr(),
+                       actionButton('combine',
+                                    'Combine fg/bg',
+                                    icon = icon('magic')),
                        h4('Transformations',style = 'font-weight: 700; text-align: center'),
+                       radioButtons("source", label = "on:",
+                                    choices = list("O" = 1, "F" = 2, "B" = 3),inline = T, 
+                                    selected = 1),
                        wellPanel(h5('Negative:',
                                                style = 'font-weight: 700; text-align: center'
                                             ),
@@ -93,8 +99,14 @@ ui <- shinyUI(
                                        hr(),
                                        actionButton('grabcutB', 'select foreground',style = "text-align: center; width:100%")),
                                        #actionButton("grabcutB","select foreground",style = 'font-weight: 700; text-align: center')),
-                              tabPanel('Result',
+                              tabPanel('Foreground',
                                        uiOutput('images2', 
+                                                style = 'overflow:auto; align:center',container = tags$div)),
+                              tabPanel('Background',
+                                       uiOutput('images3', 
+                                                style = 'overflow:auto; align:center',container = tags$div)),
+                              tabPanel('Result',
+                                       uiOutput('images4', 
                                                 style = 'overflow:auto; align:center',container = tags$div))
                               )
                           )
